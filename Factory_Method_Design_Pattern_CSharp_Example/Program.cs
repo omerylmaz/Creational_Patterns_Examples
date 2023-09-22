@@ -12,18 +12,20 @@
 //HalkBank halkBank = new("gncy");
 //halkBank.Password = "123";
 
+using System.Reflection;
+
 BankCreator bankCreator = new();
 GarantiBank? garanti = bankCreator.Create(BankType.Garanti) as GarantiBank;
-HalkBank? halkBank = bankCreator.Create(BankType.Halkbank) as HalkBank;
-VakifBank? vakifbank = bankCreator.Create(BankType.Vakifbank) as VakifBank;
+HalkBank? halkBank = bankCreator.Create(BankType.HalkBank) as HalkBank;
+VakifBank? vakifbank = bankCreator.Create(BankType.VakifBank) as VakifBank;
 
 GarantiBank? garanti2 = bankCreator.Create(BankType.Garanti) as GarantiBank;
-HalkBank? halkBank2 = bankCreator.Create(BankType.Halkbank) as HalkBank;
-VakifBank? vakifbank2 = bankCreator.Create(BankType.Vakifbank) as VakifBank;
+HalkBank? halkBank2 = bankCreator.Create(BankType.HalkBank) as HalkBank;
+VakifBank? vakifbank2 = bankCreator.Create(BankType.VakifBank) as VakifBank;
 
 GarantiBank? garanti3 = bankCreator.Create(BankType.Garanti) as GarantiBank;
-HalkBank? halkBank3 = bankCreator.Create(BankType.Halkbank) as HalkBank;
-VakifBank? vakifbank3 = bankCreator.Create(BankType.Vakifbank) as VakifBank;
+HalkBank? halkBank3 = bankCreator.Create(BankType.HalkBank) as HalkBank;
+VakifBank? vakifbank3 = bankCreator.Create(BankType.VakifBank) as VakifBank;
 
 
 
@@ -38,11 +40,23 @@ interface IBank
 class GarantiBank : IBank
 {
     string _userCode, _password;
-    public GarantiBank(string userCode, string password)
+    GarantiBank(string userCode, string password)
     {
         Console.WriteLine($"{nameof(GarantiBank)} nesnesi oluşturuldu.");
         _userCode = userCode;
         _password = password;
+    }
+
+    static GarantiBank()
+    {
+        _garantiBank = new("asd", "123");
+    }
+
+    static GarantiBank _garantiBank;
+
+    public static GarantiBank GetInstance()
+    {
+        return _garantiBank;
     }
 
     public void ConnectGaranti()
@@ -54,11 +68,16 @@ class GarantiBank : IBank
 class HalkBank : IBank
 {
     string _userCode, _password;
-    public HalkBank(string userCode)
+    HalkBank(string userCode)
     {
         Console.WriteLine($"{nameof(HalkBank)} nesnesi oluşturuldu.");
         _userCode = userCode;
     }
+
+    static HalkBank() => _halkbank = new("asd");
+
+    static HalkBank _halkbank;
+    public static HalkBank GetInstance => _halkbank;
 
     public string Password { set => _password = value; }
 
@@ -75,13 +94,19 @@ class VakifBank : IBank
 {
     string _userCode, _email, _password;
     public bool isAuthentcation { get; set; }
-    public VakifBank(CredentialVakifBank credential, string password)
+    VakifBank(CredentialVakifBank credential, string password)
     {
         Console.WriteLine($"{nameof(VakifBank)} nesnesi oluşturuldu.");
         _userCode = credential.UserCode;
         _email = credential.Mail;
         _password = password;
     }
+
+    static VakifBank() => _vakifbank = new(new() { Mail = "gncy@gencayyildiz.com", UserCode = "gncy" }, "123");
+
+
+    static VakifBank _vakifbank;
+    public static VakifBank GetInstance => _vakifbank;
     public void ValidateCredential()
     {
         if (true) //validating
@@ -96,33 +121,48 @@ class VakifBank : IBank
 #region Abstract Factory
 interface IBankFactory
 {
+    static IBankFactory GetInstance {  get; }
     IBank CreateInstance();
 }
 #endregion
 #region Concrete Factories
 class GarantiFactory : IBankFactory
 {
+    GarantiFactory() { }
+    static GarantiFactory() => _garantiFactory = new GarantiFactory();
+    static readonly GarantiFactory _garantiFactory;
+    public static IBankFactory GetInstance => _garantiFactory;
+
     public IBank CreateInstance()
     {
-        GarantiBank garanti = new("asd", "123");
+        GarantiBank garanti = GarantiBank.GetInstance();
         garanti.ConnectGaranti();
         return garanti;
     }
 }
 class HalkBankFactory : IBankFactory
 {
+    HalkBankFactory() { }
+    static HalkBankFactory() => _halkbankFactory = new HalkBankFactory();
+    static readonly HalkBankFactory _halkbankFactory;
+    public static IBankFactory GetInstance => _halkbankFactory;
+
     public IBank CreateInstance()
     {
-        HalkBank halkBank = new("asd");
+        HalkBank halkBank = HalkBank.GetInstance;
         halkBank.Password = "123";
         return halkBank;
     }
 }
 class VakifBankFactory : IBankFactory
 {
+    VakifBankFactory() { }
+    static VakifBankFactory() => _vakifbankFactory = new VakifBankFactory();
+    static readonly VakifBankFactory _vakifbankFactory;
+    public static IBankFactory GetInstance => _vakifbankFactory;
     public IBank CreateInstance()
     {
-        VakifBank vakifBank = new(new() { Mail = "gncy@gencayyildiz.com", UserCode = "gncy" }, "123");
+        VakifBank vakifBank = VakifBank.GetInstance;
         vakifBank.ValidateCredential();
         return vakifBank;
     }
@@ -132,20 +172,23 @@ class VakifBankFactory : IBankFactory
 #region Creator
 enum BankType
 {
-    Garanti, Halkbank, Vakifbank
+    Garanti, HalkBank, VakifBank
 }
 class BankCreator
 {
+    //static Dictionary<BankType, BankCreator> _factories = new();
     public IBank Create(BankType bankType)
     {
-        IBankFactory _bankFactory = bankType switch
-        {
-            BankType.Vakifbank => new VakifBankFactory(),
-            BankType.Halkbank => new HalkBankFactory(),
-            BankType.Garanti => new GarantiFactory()
-        };
-
-        return _bankFactory.CreateInstance();
+        //if (!_factories.ContainsKey(bankType))
+        //{
+        //    _factories[bankType] = new IBankFactory()
+        //}
+        string factory = $"{bankType}Factory";
+        Type? type = Assembly.GetExecutingAssembly().GetType(factory);
+        PropertyInfo? getInstanceMethod = type?.GetProperty(nameof(IBankFactory.GetInstance)/*, BindingFlags.Static | BindingFlags.Public*/);
+        object? factoryInstance = getInstanceMethod?.GetValue(null, null);
+        IBankFactory? bankFactory = factoryInstance as IBankFactory;
+        return bankFactory.CreateInstance();
     }
 }
 #endregion
