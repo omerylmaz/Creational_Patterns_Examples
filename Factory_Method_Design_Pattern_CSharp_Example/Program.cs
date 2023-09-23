@@ -121,10 +121,12 @@ class VakifBank : IBank
 #region Abstract Factory
 interface IBankFactory
 {
-    static IBankFactory GetInstance {  get; }
+    static IBankFactory GetInstance { get; }
     IBank CreateInstance();
 }
 #endregion
+
+
 #region Concrete Factories
 class GarantiFactory : IBankFactory
 {
@@ -142,7 +144,6 @@ class GarantiFactory : IBankFactory
 }
 class HalkBankFactory : IBankFactory
 {
-    HalkBankFactory() { }
     static HalkBankFactory() => _halkbankFactory = new HalkBankFactory();
     static readonly HalkBankFactory _halkbankFactory;
     public static IBankFactory GetInstance => _halkbankFactory;
@@ -176,16 +177,12 @@ enum BankType
 }
 class BankCreator
 {
-    //static Dictionary<BankType, BankCreator> _factories = new();
     public IBank Create(BankType bankType)
     {
-        //if (!_factories.ContainsKey(bankType))
-        //{
-        //    _factories[bankType] = new IBankFactory()
-        //}
         string factory = $"{bankType}Factory";
         Type? type = Assembly.GetExecutingAssembly().GetType(factory);
-        PropertyInfo? getInstanceMethod = type?.GetProperty(nameof(IBankFactory.GetInstance)/*, BindingFlags.Static | BindingFlags.Public*/);
+
+        PropertyInfo? getInstanceMethod = type?.GetProperty(nameof(IBankFactory.GetInstance));
         object? factoryInstance = getInstanceMethod?.GetValue(null, null);
         IBankFactory? bankFactory = factoryInstance as IBankFactory;
         return bankFactory.CreateInstance();
